@@ -481,6 +481,82 @@
         </select>
       </div>
 
+<div class="control-row">
+        <label>DITHERING</label>
+        <select id="dithering">
+          <option value="none">None</option>
+          <option value="floyd" selected>Floyd-Steinberg</option>
+          <option value="ordered">Ordered (Bayer)</option>
+        </select>
+      </div>
+
+      <div class="control-row">
+        <label>CONTRAST</label>
+        <input type="range" id="contrast" min="-100" max="100" value="10" step="5">
+        <div class="val-badge" id="contrastVal">10</div>
+      </div>
+
+      <div class="control-row">
+        <label>SATURATION</label>
+        <input type="range" id="saturation" min="0" max="200" value="110" step="5">
+        <div class="val-badge" id="saturationVal">110</div>
+      </div>
+
+      <div class="toggle-row">
+        <input type="checkbox" id="showGrid">
+        <label class="toggle-label" for="showGrid">SHOW PIXEL GRID</label>
+        <input type="checkbox" id="showOutline" style="margin-left:14px">
+        <label class="toggle-label" for="showOutline">DARK OUTLINE</label>
+      </div>
+
+      <div id="palettePreview" class="palette-strip"></div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="generateBtn" disabled>▶ GENERATE</button>
+        <button class="btn-secondary" id="resetBtn">↺ RESET</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- OUTPUT PANEL -->
+  <div class="panel output-panel" id="outputPanel" data-label="PIXEL ART OUTPUT">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progressBar"></div>
+      </div>
+      <div class="progress-label" id="progressLabel">0%</div>
+    </div>
+
+    <div class="canvas-wrap">
+      <div class="canvas-item">
+        <div class="clabel">ORIGINAL</div>
+        <canvas id="originalCanvas"></canvas>
+      </div>
+      <div class="canvas-item">
+        <div class="clabel">PIXEL ART</div>
+        <canvas id="outputCanvas"></canvas>
+      </div>
+    </div>
+
+    <div class="btn-row" style="justify-content:center; margin-top:16px;">
+      <button class="btn-accent2" id="downloadBtn">⬇ DOWNLOAD PNG</button>
+      <button class="btn-secondary" id="downloadSmallBtn">⬇ DOWNLOAD SMALL</button>
+    </div>
+  </div>
+</main>
+
+<!-- hidden processing canvas -->
+<canvas id="workCanvas" style="display:none"></canvas>
+
+<footer>
+  Made with <strong>♥</strong> · Upload any photo, get pixel art magic
+</footer>
+
+
 
 
 
