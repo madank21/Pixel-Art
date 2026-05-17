@@ -144,5 +144,77 @@
   input[type="file"] {
     display: none;
   }
+   /* Preview */
+  .preview-wrap {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .preview-wrap.visible { display: flex; }
+
+  .preview-wrap img {
+    width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    border: 2px solid var(--card);
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 4px;
+  }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .control-row label {
+    color: var(--accent2);
+    font-size: 18px;
+    min-width: 110px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    accent-color: var(--accent);
+    cursor: pointer;
+    min-width: 80px;
+  }
+
+  .val-badge {
+    background: var(--card);
+    color: var(--accent3);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    min-width: 42px;
+    text-align: center;
+  }
+
+  select {
+    background: var(--card);
+    color: var(--text);
+    border: 2px solid var(--muted);
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    padding: 4px 10px;
+    cursor: pointer;
+    flex: 1;
+    outline: none;
+  }
+
+  select:focus { border-color: var(--accent); }
+
+
 
 
