@@ -333,6 +333,156 @@
     text-align: right;
   }
 
+  /* Palette preview */
+  .palette-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 4px;
+  }
+
+  .palette-swatch {
+    width: 18px;
+    height: 18px;
+    border: 1px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+  }
+
+  /* Stat bar */
+  .stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 10px 0 4px;
+    border-top: 2px solid var(--card);
+    margin-top: 10px;
+  }
+
+  .stat {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--muted);
+  }
+  .stat span { color: var(--accent2); }
+
+  /* corner decorations */
+  .panel .corner {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
+  }
+  .panel .corner.tl { top: 0; left: 0; }
+  .panel .corner.tr { top: 0; right: 0; }
+  .panel .corner.bl { bottom: 0; left: 0; }
+  .panel .corner.br { bottom: 0; right: 0; }
+
+  footer {
+    text-align: center;
+    padding: 30px;
+    color: var(--muted);
+    font-size: 16px;
+  }
+
+  footer strong { color: var(--accent); }
+
+  /* pixel grid overlay toggle */
+  canvas.grid-on {
+    outline: none;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .toggle-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬛ PIXEL ART<br>GENERATOR</h1>
+  <p>Upload any photo → get retro pixel art <span class="blink">█</span></p>
+</header>
+
+<main>
+  <!-- INPUT PANEL -->
+  <div class="panel" data-label="INPUT IMAGE">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+
+    <div class="drop-zone" id="dropZone">
+      <span class="icon">🖼️</span>
+      <span>Drop your photo here<br>or <strong>click to upload</strong></span>
+      <span style="font-size:14px;color:var(--muted)">JPG · PNG · WEBP · GIF</span>
+    </div>
+    <input type="file" id="fileInput" accept="image/*">
+
+    <div class="preview-wrap" id="previewWrap">
+      <img id="previewImg" src="" alt="preview">
+      <div class="stats" id="imgStats">
+        <div class="stat">W: <span id="sW">-</span>px</div>
+        <div class="stat">H: <span id="sH">-</span>px</div>
+        <div class="stat">FILE: <span id="sFile">-</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS PANEL -->
+  <div class="panel" data-label="SETTINGS">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+
+    <div class="controls">
+
+      <div class="control-row">
+        <label>PIXEL SIZE</label>
+        <input type="range" id="pixelSize" min="2" max="24" value="8" step="1">
+        <div class="val-badge" id="pixelSizeVal">8</div>
+      </div>
+
+      <div class="control-row">
+        <label>PALETTE</label>
+        <select id="paletteSelect">
+          <option value="none">None (Full Color)</option>
+          <option value="gameboy">Game Boy (4 colors)</option>
+          <option value="nes">NES (54 colors)</option>
+          <option value="c64">C64 (16 colors)</option>
+          <option value="cga">CGA (4 colors)</option>
+          <option value="pico8" selected>PICO-8 (16 colors)</option>
+          <option value="mono">Monochrome</option>
+          <option value="sepia">Sepia</option>
+          <option value="pastel">Pastel Dream</option>
+          <option value="neon">Neon City</option>
+        </select>
+      </div>
+
+      <div class="control-row">
+        <label>OUTPUT SIZE</label>
+        <select id="outputSize">
+          <option value="1">1x (native pixel size)</option>
+          <option value="2">2x</option>
+          <option value="4" selected>4x</option>
+          <option value="8">8x</option>
+        </select>
+      </div>
+
+
+
 
 
 
