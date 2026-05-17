@@ -684,7 +684,259 @@ function floydSteinberg(data, w, h, palette) {
   }
 }
 
+// ─── ORDERED (BAYER 4x4) DITHER ──────────────────────────────────────────────
+const BAYER4=[
+  [0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]
+];
+function orderedDither(data,w,h,palette) {
+  for (let y=0;y<h;y++) {
+    for (let x=0;x<w;x++) {
+      const i=(y*w+x)*4;
+      const t=(BAYER4[y%4][x%4]/16-0.5)*64;
+      const nr=Math.max(0,Math.min(255,data[i]+t));
+      const ng=Math.max(0,Math.min(255,data[i+1]+t));
+      const nb=Math.max(0,Math.min(255,data[i+2]+t));
+      const [fr,fg,fb]=nearestColor(nr,ng,nb,palette);
+      data[i]=fr;data[i+1]=fg;data[i+2]=fb;
+    }
+  }
+}
 
+// ─── MAIN GENERATE ───────────────────────────────────────────────────────────
+document.getElementById('generateBtn').addEventListener('click', generate);
+
+async function generate() {
+  if (!loadedImage) return;
+
+  const pixelSize = parseInt(document.getElementById('pixelSize').value);
+  const paletteName = document.getElementById('paletteSelect').value;
+  const outputScale = parseInt(document.getElementById('outputSize').value);
+  const ditheringMode = document.getElementById('dithering').value;
+  const contrast = parseInt(document.getElementById('contrast').value);
+  const saturation = parseInt(document.getElementById('saturation').value);
+  const showGrid = document.getElementById('showGrid').checked;
+  const showOutline = document.getElementById('showOutline').checked;
+  const palette = PALETTES[paletteName];
+
+  // show output panel
+  document.getElementById('outputPanel').classList.add('visible');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressBar = document.getElementById('progressBar');
+  const progressLabel = document.getElementById('progressLabel');
+  progressWrap.classList.add('visible');
+  progressBar.style.width = '0%';
+  progressLabel.textContent = '0%';
+
+  // Draw source to work canvas
+  const src = document.getElementById('workCanvas');
+  const ctx = src.getContext('2d');
+
+  // Limit size for performance
+  const maxW = 600;
+  let sw = loadedImage.width, sh = loadedImage.height;
+  if (sw > maxW) { sh = Math.round(sh*maxW/sw); sw = maxW; }
+
+  src.width = sw; src.height = sh;
+  ctx.drawImage(loadedImage, 0, 0, sw, sh);
+
+  // Show original canvas
+  const origCanvas = document.getElementById('originalCanvas');
+  const dispW = Math.min(sw, 320);
+  const dispH = Math.round(sh*dispW/sw);
+  origCanvas.width = dispW; origCanvas.height = dispH;
+  origCanvas.getContext('2d').drawImage(loadedImage,0,0,dispW,dispH);
+
+  await sleep(30);
+
+  // Pixel grid dims
+  const pxW = Math.ceil(sw / pixelSize);
+  const pxH = Math.ceil(sh / pixelSize);
+
+  // Get full image data
+  const imgData = ctx.getImageData(0, 0, sw, sh);
+  const data = imgData.data;
+
+  // Apply contrast + saturation to each pixel
+  for (let i=0;i<data.length;i+=4) {
+    let r=data[i],g=data[i+1],b=data[i+2];
+    r=adjustContrast(r,contrast);
+    g=adjustContrast(g,contrast);
+    b=adjustContrast(b,contrast);
+    [r,g,b]=adjustSaturation(r,g,b,saturation);
+    data[i]=r;data[i+1]=g;data[i+2]=b;
+  }
+  ctx.putImageData(imgData,0,0);
+
+  await sleep(20);
+
+  // Build pixel art: for each cell, average colors
+  const cells = new Uint8ClampedArray(pxW*pxH*4);
+
+  for (let py=0;py<pxH;py++) {
+    for (let px=0;px<pxW;px++) {
+      const x0=px*pixelSize, y0=py*pixelSize;
+      const x1=Math.min(x0+pixelSize,sw);
+      const y1=Math.min(y0+pixelSize,sh);
+      let r=0,g=0,b=0,a=0,count=0;
+      for (let y=y0;y<y1;y++){
+        for (let x=x0;x<x1;x++){
+          const i=(y*sw+x)*4;
+          r+=data[i];g+=data[i+1];b+=data[i+2];a+=data[i+3];count++;
+        }
+      }
+      const ci=(py*pxW+px)*4;
+      cells[ci]=r/count;cells[ci+1]=g/count;cells[ci+2]=b/count;cells[ci+3]=a/count;
+    }
+    if (py%20===0) {
+      const pct=Math.round(50*py/pxH);
+      progressBar.style.width=pct+'%';
+      progressLabel.textContent=pct+'%';
+      await sleep(0);
+    }
+  }
+
+  // Dithering (on cells)
+  if (palette) {
+    if (ditheringMode==='floyd') {
+      floydSteinberg(cells,pxW,pxH,palette);
+    } else if (ditheringMode==='ordered') {
+      orderedDither(cells,pxW,pxH,palette);
+    } else {
+      // just nearest
+      for (let i=0;i<cells.length;i+=4) {
+        const [nr,ng,nb]=nearestColor(cells[i],cells[i+1],cells[i+2],palette);
+        cells[i]=nr;cells[i+1]=ng;cells[i+2]=nb;
+      }
+    }
+  }
+
+  progressBar.style.width='75%';
+  progressLabel.textContent='75%';
+  await sleep(20);
+
+  // Draw output canvas
+  const outW = pxW*outputScale;
+  const outH = pxH*outputScale;
+  const outCanvas = document.getElementById('outputCanvas');
+  outCanvas.width = outW; outCanvas.height = outH;
+  const outCtx = outCanvas.getContext('2d');
+  outCtx.imageSmoothingEnabled = false;
+
+  for (let py=0;py<pxH;py++) {
+    for (let px=0;px<pxW;px++) {
+      const ci=(py*pxW+px)*4;
+      const r=cells[ci],g=cells[ci+1],b=cells[ci+2],a=cells[ci+3];
+      outCtx.fillStyle=`rgba(${r},${g},${b},${a/255})`;
+      outCtx.fillRect(px*outputScale,py*outputScale,outputScale,outputScale);
+    }
+  }
+
+  // Dark outline
+  if (showOutline) {
+    outCtx.globalAlpha = 0.25;
+    for (let py=0;py<pxH;py++) {
+      for (let px=0;px<pxW;px++) {
+        const ci=(py*pxW+px)*4;
+        // check neighbors
+        const neighbors=[[px-1,py],[px+1,py],[px,py-1],[px,py+1]];
+        for (const [nx,ny] of neighbors) {
+          if (nx<0||nx>=pxW||ny<0||ny>=pxH) {
+            outCtx.fillStyle='#000';
+            outCtx.fillRect(px*outputScale,py*outputScale,outputScale,outputScale);
+            break;
+          }
+          const ni=(ny*pxW+nx)*4;
+          const dr=Math.abs(cells[ci]-cells[ni]);
+          const dg=Math.abs(cells[ci+1]-cells[ni+1]);
+          const db=Math.abs(cells[ci+2]-cells[ni+2]);
+          if (dr+dg+db>120) {
+            outCtx.fillStyle='#000';
+            outCtx.fillRect(px*outputScale,py*outputScale,1,outputScale);
+            outCtx.fillRect(px*outputScale,py*outputScale,outputScale,1);
+          }
+        }
+      }
+    }
+    outCtx.globalAlpha = 1.0;
+  }
+
+  // Grid overlay
+  if (showGrid && outputScale >= 3) {
+    outCtx.strokeStyle = 'rgba(0,0,0,0.2)';
+    outCtx.lineWidth = 0.5;
+    for (let x=0;x<=pxW;x++) {
+      outCtx.beginPath();
+      outCtx.moveTo(x*outputScale,0);
+      outCtx.lineTo(x*outputScale,outH);
+      outCtx.stroke();
+    }
+    for (let y=0;y<=pxH;y++) {
+      outCtx.beginPath();
+      outCtx.moveTo(0,y*outputScale);
+      outCtx.lineTo(outW,y*outputScale);
+      outCtx.stroke();
+    }
+  }
+
+  progressBar.style.width='100%';
+  progressLabel.textContent='100%';
+  await sleep(200);
+  progressWrap.classList.remove('visible');
+
+  // Limit display size
+  const maxDisp=400;
+  if (outW > maxDisp) {
+    outCanvas.style.width = maxDisp+'px';
+    outCanvas.style.height = Math.round(outH*maxDisp/outW)+'px';
+  } else {
+    outCanvas.style.width='';
+    outCanvas.style.height='';
+  }
+  origCanvas.style.width = (Math.min(sw,maxDisp))+'px';
+  origCanvas.style.height = Math.round(sh*Math.min(sw,maxDisp)/sw)+'px';
+}
+
+// ─── DOWNLOAD ────────────────────────────────────────────────────────────────
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const c = document.getElementById('outputCanvas');
+  const a = document.createElement('a');
+  a.download = 'pixel_art.png';
+  a.href = c.toDataURL('image/png');
+  a.click();
+});
+
+document.getElementById('downloadSmallBtn').addEventListener('click', () => {
+  const src = document.getElementById('outputCanvas');
+  const pixelSize = parseInt(document.getElementById('pixelSize').value);
+  const outputScale = parseInt(document.getElementById('outputSize').value);
+  const small = document.createElement('canvas');
+  small.width = Math.round(src.width / outputScale);
+  small.height = Math.round(src.height / outputScale);
+  const ctx = small.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(src, 0, 0, small.width, small.height);
+  const a = document.createElement('a');
+  a.download = 'pixel_art_small.png';
+  a.href = small.toDataURL('image/png');
+  a.click();
+});
+
+// ─── RESET ───────────────────────────────────────────────────────────────────
+document.getElementById('resetBtn').addEventListener('click', () => {
+  loadedImage = null;
+  document.getElementById('previewWrap').classList.remove('visible');
+  document.getElementById('outputPanel').classList.remove('visible');
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('sW').textContent='-';
+  document.getElementById('sH').textContent='-';
+  document.getElementById('sFile').textContent='-';
+});
+
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+</script>
+</body>
+</html>
 
 
 
